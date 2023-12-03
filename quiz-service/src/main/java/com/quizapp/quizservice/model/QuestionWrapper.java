@@ -1,4 +1,4 @@
-package com.practice.quiz.model;
+package com.quizapp.quizservice.model;
 
 import lombok.Data;
 

@@ -1,4 +1,4 @@
-package com.practice.quiz.services;
+package com.quizapp.quizservice.services;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,30 +9,33 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import com.practice.quiz.entity.QuestionEntity;
-import com.practice.quiz.entity.QuizEntity;
-import com.practice.quiz.model.QuestionWrapper;
-import com.practice.quiz.model.ResponseModel;
-import com.practice.quiz.repository.QuestionRepository;
-import com.practice.quiz.repository.QuizRepository;
+import com.quizapp.quizservice.feign.QuizInteface;
+import com.quizapp.quizservice.model.QuestionWrapper;
+import com.quizapp.quizservice.model.ResponseModel;
+import com.quizapp.quizservice.repository.QuizRepository;
+import com.quizapp.quizservice.entity.QuizEntity;
+
+
+
 
 
 @Service
 public class QuizService {
+  
     @Autowired
-      QuestionRepository questionRepository;
+     private QuizRepository quizRepository;
     @Autowired
-      QuizRepository quizRepository;
+     private  QuizInteface quizInterface;
 
 
 
     public ResponseEntity<String> addQuiz(String category, int num, String title) {
         
-        List<QuestionEntity> questions = questionRepository.findRandomQuestionByCategory(category, num);
+        List<Long> questions = this.quizInterface.generateQuestionForQuiz(category,num).getBody();
 
         QuizEntity  quiz = new QuizEntity();
         quiz.setTitle(title);
-        quiz.setQuestions(questions);
+        quiz.setQuestionIds(questions);
 
         quizRepository.save(quiz);
 
@@ -42,39 +45,22 @@ public class QuizService {
 
     public ResponseEntity<List<QuestionWrapper>> fetchQuestionsByQuizId(Long quizId){
 
-        Optional<QuizEntity> quiz = quizRepository.findById(quizId);
+        Optional<QuizEntity> quiz = this.quizRepository.findById(quizId);
 
-        List<QuestionEntity> quetionsFromDB = quiz.isPresent() ? quiz.get().getQuestions() : new ArrayList<>();
+        List<Long> quetionIds = quiz.isPresent() ? quiz.get().getQuestionIds() : new ArrayList<>();
 
-        List<QuestionWrapper> questionForUser = new ArrayList<>();
 
-        for(QuestionEntity q : quetionsFromDB){
-            QuestionWrapper qw = new QuestionWrapper(q.getId(),q.getQuestionTitle(), q.getOption1(), q.getOption2(), q.getOption3(), q.getOption4());
 
-            questionForUser.add(qw);
-        }
+        List<QuestionWrapper> questionForUser = this.quizInterface.fetchQuestionsByIds(quetionIds).getBody();
 
-        return new ResponseEntity<>(questionForUser, HttpStatus.OK);        
+            return new ResponseEntity<>(questionForUser, HttpStatus.OK);        
 
     }
 
-    public ResponseEntity<Integer> calculateResult(Long quizId,  List<ResponseModel> responses){
+    public ResponseEntity<Integer> calculateResult( List<ResponseModel> responses){
 
-        Optional<QuizEntity> quiz = quizRepository.findById(quizId);
-
-        List<QuestionEntity> quetionsFromDB = quiz.isPresent() ? quiz.get().getQuestions() : new ArrayList<>();
-
-        int right = 0;
-        int i = 0;
-        
-        for(ResponseModel r: responses){
-            if(r.getAnswer().equals(quetionsFromDB.get(i).getRightAnswer()))
-                right++;
-        
-            i++;
-        }
-        
-        return new ResponseEntity<>(right, HttpStatus.OK);
+          Integer score = this.quizInterface.calculateScore(responses).getBody();
+        return new ResponseEntity<>(score, HttpStatus.OK);
 
     }
 

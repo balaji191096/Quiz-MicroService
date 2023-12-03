@@ -1,4 +1,4 @@
-package com.practice.quiz.entity;
+package com.quizapp.quizservice.entity;
 
 import java.sql.Timestamp;
 import java.util.List;
@@ -7,12 +7,11 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.ManyToMany;
 import lombok.Data;
 
 @Data
@@ -26,9 +25,8 @@ public class QuizEntity {
     @Column()
     private String title;
 
-    @ManyToMany
-    @JoinTable(name = "tbl_questions_quiz")
-    private List<QuestionEntity> questions;
+    @ElementCollection
+    private List<Long> questionIds;
 
 
     @CreationTimestamp()
